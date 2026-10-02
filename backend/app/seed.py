@@ -79,9 +79,8 @@ def seed(db: Session) -> dict[str, str]:
 
 
 if __name__ == "__main__":
-    from .database import Base, SessionLocal, engine
+    from .database import SessionLocal
 
-    Base.metadata.create_all(bind=engine)
     with SessionLocal() as session:
         credentials = seed(session)
     for name, password in credentials.items():

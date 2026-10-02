@@ -1,19 +1,27 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-BACKEND_DIR = Path(__file__).resolve().parents[1]
-DATA_DIR = BACKEND_DIR / "data"
-DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-DATABASE_URL = os.getenv(
-    "CMH_ANESTHESIA_DATABASE_URL",
-    f"sqlite:///{(DATA_DIR / 'cmh_anesthesia.db').as_posix()}",
-)
+def resolve_database_url() -> str:
+    value = os.getenv("CMH_ANESTHESIA_DATABASE_URL", "").strip()
+    if not value:
+        raise RuntimeError(
+            "CMH_ANESTHESIA_DATABASE_URL is required. Run the project launcher to configure PostgreSQL."
+        )
+    if value.startswith("sqlite") and os.getenv("CMH_ANESTHESIA_TESTING", "").lower() != "true":
+        raise RuntimeError("SQLite is supported only by automated tests. Configure PostgreSQL for application use.")
+    if value.startswith("postgresql://"):
+        return value.replace("postgresql://", "postgresql+psycopg://", 1)
+    if not value.startswith(("postgresql+psycopg://", "sqlite")):
+        raise RuntimeError("CMH_ANESTHESIA_DATABASE_URL must use PostgreSQL with the psycopg driver.")
+    return value
+
+
+DATABASE_URL = resolve_database_url()
 
 
 class Base(DeclarativeBase):

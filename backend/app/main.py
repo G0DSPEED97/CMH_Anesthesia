@@ -33,7 +33,7 @@ from .auth import (
     session_user,
     verify_password,
 )
-from .database import Base, SessionLocal, engine, get_db
+from .database import SessionLocal, get_db
 from .documents import create_anesthesia_form_pdf, create_token_pdf, queue_form_print, queue_token_print
 from .models import AnesthesiaCase, AppSetting, AuditLog, DailyCounter, Patient, Rank, User, UserSession
 from .realtime import hub
@@ -57,7 +57,6 @@ API = "/api/v1"
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         created = seed(db)
     if created:

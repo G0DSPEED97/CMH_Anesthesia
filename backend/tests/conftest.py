@@ -6,6 +6,7 @@ from pathlib import Path
 TEST_DB = Path(__file__).parent / "test.db"
 TEST_DB.unlink(missing_ok=True)
 os.environ["CMH_ANESTHESIA_DATABASE_URL"] = f"sqlite:///{TEST_DB}"
+os.environ["CMH_ANESTHESIA_TESTING"] = "true"
 os.environ["CMH_ANESTHESIA_ADMIN_PASSWORD"] = "Admin-test-2026"
 os.environ["CMH_ANESTHESIA_SEED_USER_PASSWORD"] = "Staff-test-2026"
 

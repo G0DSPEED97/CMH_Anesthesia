@@ -58,6 +58,8 @@ For daily development after PostgreSQL is ready:
 
 Initial passwords are printed only when `.env` is first created. Keep `.env` private and backed up securely.
 
+PostgreSQL is mandatory for application use. SQLite is enabled only inside automated tests. Database schema changes are applied through Alembic rather than automatic table creation; see [PostgreSQL and Alembic operations](docs/DATABASE_OPERATIONS.md).
+
 ## Printer setup
 
 The application never invokes the browser print dialog. On submit, the backend generates immutable PDFs and sends them to configured operating-system print queues.
@@ -69,6 +71,13 @@ The application never invokes the browser print dialog. On submit, the backend g
 - If a printer is unavailable, patient creation still succeeds and staff can retry from **Reprint token**. A printer failure never loses the patient record.
 
 See [Printer setup](docs/PRINTER_SETUP.md).
+
+## Project records
+
+- [Change history](CHANGELOG.md)
+- [PostgreSQL and Alembic operations](docs/DATABASE_OPERATIONS.md)
+- Final manager report in `docs/reports/`
+- Final presentation and print PDF in `output/`
 
 ## Development checks
 
