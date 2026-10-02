@@ -1,0 +1,200 @@
+@if (!user) {
+  <main class="login-page">
+    <section class="login-card">
+      <div class="crest">CMH</div>
+      <p class="eyebrow">CMH DHAKA</p>
+      <h1>Anaesthesia Management</h1>
+      <p class="muted">Secure departmental access</p>
+      <form (ngSubmit)="login()">
+        <label>Username<input name="username" autocomplete="username" [(ngModel)]="loginForm.username" required autofocus></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" [(ngModel)]="loginForm.password" required></label>
+        @if (error) { <p class="alert error">{{ error }}</p> }
+        <button class="primary full" [disabled]="busy">{{ busy ? 'Signing in…' : 'Sign in' }}</button>
+      </form>
+    </section>
+  </main>
+} @else if (user.must_change_password) {
+  <main class="login-page">
+    <section class="login-card wide-card">
+      <p class="eyebrow">FIRST SIGN-IN</p>
+      <h1>Create your private password</h1>
+      <p class="muted">The temporary password cannot be used after this step.</p>
+      <form (ngSubmit)="changePassword()">
+        <label>Temporary password<input name="current" type="password" [(ngModel)]="passwordForm.current" required></label>
+        <label>New password<input name="next" type="password" minlength="10" [(ngModel)]="passwordForm.next" required></label>
+        <label>Confirm new password<input name="confirm" type="password" minlength="10" [(ngModel)]="passwordForm.confirm" required></label>
+        @if (error) { <p class="alert error">{{ error }}</p> }
+        <button class="primary full" [disabled]="busy">Save password</button>
+      </form>
+    </section>
+  </main>
+} @else if (view === 'reception-display') {
+  <main class="public-display reception-screen">
+    <header>
+      <div class="display-brand"><b>CMH</b><span><strong>Anaesthesia Reception</strong><small>Token display • Silent calling</small></span></div>
+      <button (click)="setView(user.role === 'display' ? 'ot-display' : 'reception')">Exit display</button>
+    </header>
+    <section class="display-body">
+      <article class="hero-call">
+        <span class="display-kicker">NOW CALLED</span>
+        @if (receptionCurrent) {
+          <h1>{{ receptionCurrent.token_number }}</h1>
+          <h2>{{ receptionCurrent.patient.rank_label }} {{ receptionCurrent.patient.name }}</h2>
+          <p>Please proceed to the anaesthesia doctor</p>
+        } @else {
+          <h1 class="idle-token">—</h1><h2>Please wait for your token</h2>
+        }
+      </article>
+      <aside>
+        <p class="display-kicker">UPCOMING</p>
+        @for (item of receptionUpcoming; track item.id; let i = $index) {
+          <div class="upcoming-row"><i>{{ i + 1 }}</i><b>{{ item.token_number }}</b><span>{{ item.patient.rank_label }} {{ item.patient.name }}</span></div>
+        } @empty { <p class="display-empty">No patients waiting</p> }
+      </aside>
+    </section>
+    <footer>No sound announcement will be made. Please watch the screen.</footer>
+  </main>
+} @else if (view === 'ot-display') {
+  <main class="public-display ot-screen">
+    <header>
+      <div class="display-brand"><b>CMH</b><span><strong>Operation Theatre Status</strong><small>Department of Anaesthesiology</small></span></div>
+      <div class="display-controls"><input type="date" [(ngModel)]="rosterDate" (change)="refresh()"><button (click)="setView(user.role === 'display' ? 'reception-display' : 'ot-control')">Exit display</button></div>
+    </header>
+    @if (displaySlide === 'current') {
+      <section class="ot-slide">
+        <p class="display-kicker">CURRENTLY IN OPERATION THEATRE</p>
+        <div class="active-grid">
+          @for (item of otActive; track item.id) {
+            <article class="active-case">
+              <span>{{ item.ot_table || 'OT' }}</span>
+              <h1>{{ item.patient.rank_label }} {{ item.patient.name }}</h1>
+              <h2>{{ item.operation || item.proposed_surgery }}</h2>
+              <dl><div><dt>Token</dt><dd>{{ item.token_number }}</dd></div><div><dt>Status</dt><dd>{{ item.ot_status === 'in_ot' ? 'In OT' : 'In progress' }}</dd></div><div><dt>Anaesthesiologist</dt><dd>{{ item.anesthesiologist || '—' }}</dd></div></dl>
+              @if (item.status_note) { <p>{{ item.status_note }}</p> }
+            </article>
+          } @empty { <div class="display-empty large">No operation is currently in progress</div> }
+        </div>
+      </section>
+    } @else {
+      <section class="ot-slide">
+        <p class="display-kicker">UPCOMING PATIENTS</p>
+        <div class="upcoming-table">
+          @for (item of otUpcoming; track item.id; let i = $index) {
+            <article><em>{{ i + 1 }}</em><b>{{ item.ot_table || 'To assign' }}</b><span><strong>{{ item.patient.rank_label }} {{ item.patient.name }}</strong><small>{{ item.operation || item.proposed_surgery }}</small></span><i>{{ item.ot_status === 'called' ? 'Called' : 'Waiting' }}</i></article>
+          } @empty { <div class="display-empty large">No upcoming patient</div> }
+        </div>
+      </section>
+    }
+    <footer><span>{{ rosterDate | date:'fullDate' }}</span><strong>{{ completedCount }} completed today</strong><span>Silent display</span></footer>
+  </main>
+} @else {
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><b>CMH</b><span>Anaesthesia<small>Management System</small></span></div>
+      <nav>
+        @if (can('reception')) { <button [class.active]="view === 'reception'" (click)="setView('reception')"><i>01</i><span>Reception</span></button> }
+        @if (can('doctor')) { <button [class.active]="view === 'doctor'" (click)="setView('doctor')"><i>02</i><span>Doctor review</span></button> }
+        @if (can('reception-display')) { <button (click)="setView('reception-display')"><i>03</i><span>Reception display</span></button> }
+        @if (can('ot-control')) { <button [class.active]="view === 'ot-control'" (click)="setView('ot-control')"><i>04</i><span>OT control</span></button> }
+        @if (can('ot-display')) { <button (click)="setView('ot-display')"><i>05</i><span>OT display</span></button> }
+        @if (can('settings')) { <button [class.active]="view === 'settings'" (click)="setView('settings')"><i>06</i><span>Settings</span></button> }
+      </nav>
+      <div class="user-block"><strong>{{ user.display_name }}</strong><small>{{ user.role.replace('_', ' ') }}</small><button (click)="logout()">Sign out</button></div>
+    </aside>
+    <main class="workspace">
+      <header class="topbar">
+        <div><p class="eyebrow">DEPARTMENT OF ANAESTHESIOLOGY</p><h1>{{ view === 'reception' ? 'Patient reception' : view === 'doctor' ? 'Doctor review & scheduling' : view === 'ot-control' ? 'Operation theatre control' : 'System settings' }}</h1></div>
+        <div class="live"><i></i> Live updates</div>
+      </header>
+      @if (message) { <div class="alert success">{{ message }} <button (click)="message = ''">×</button></div> }
+      @if (error) { <div class="alert error">{{ error }} <button (click)="error = ''">×</button></div> }
+
+      @if (view === 'reception') {
+        <section class="two-column">
+          <form class="panel registration" (ngSubmit)="submitRegistration()">
+            <div class="panel-title"><span>New</span><div><h2>Register patient</h2><p>Fields marked * are required</p></div></div>
+            <div class="form-grid">
+              <label>Army / service number *<input name="service" [(ngModel)]="registerForm.service_number" required placeholder="e.g. BA-5471"></label>
+              <label class="rank-picker">Rank *<input name="rankSearch" [(ngModel)]="rankSearch" (focus)="rankMenuOpen = true" (input)="registerForm.rank_code = ''; rankMenuOpen = true" autocomplete="off" required placeholder="Search rank"><input type="hidden" name="rank" [(ngModel)]="registerForm.rank_code">@if (rankMenuOpen) { <div class="rank-menu">@for (rank of filteredRanks; track rank.code) { <button type="button" (click)="selectRank(rank)"><strong>{{ rank.label }}</strong><small>{{ rank.category }}</small></button> } @empty { <p>No matching rank</p> }</div> }</label>
+              <label class="span-2">Patient name *<input name="name" [(ngModel)]="registerForm.name" required></label>
+              <label>Unit *<input name="unit" [(ngModel)]="registerForm.unit" required></label>
+              <label>Age *<input name="age" type="number" min="0" max="120" [(ngModel)]="registerForm.age" required></label>
+              <fieldset><legend>Sex *</legend><label><input type="radio" name="sex" value="male" [(ngModel)]="registerForm.sex"> Male</label><label><input type="radio" name="sex" value="female" [(ngModel)]="registerForm.sex"> Female</label><label><input type="radio" name="sex" value="other" [(ngModel)]="registerForm.sex"> Other</label></fieldset>
+              <label>Proposed anaesthetic *<select name="anaesthetic" [(ngModel)]="registerForm.proposed_anesthetic"><option>GA</option><option>SAB</option><option>BPB</option><option>TIVA</option><option>RA</option><option>Nerve block</option><option>LA</option><option>To be decided</option></select></label>
+              <label class="span-2">Proposed surgery *<textarea name="surgery" rows="3" [(ngModel)]="registerForm.proposed_surgery" required></textarea></label>
+            </div>
+            <label class="check"><input type="checkbox" name="autoPrint" [(ngModel)]="registerForm.auto_print_token"> Send token to configured printer automatically</label>
+            <button class="primary full" [disabled]="busy">{{ busy ? 'Creating…' : 'Submit & create token' }}</button>
+          </form>
+          <section class="panel queue-panel">
+            <div class="section-heading"><div><h2>Today’s reception</h2><p>Recent registrations and print controls</p></div><button class="secondary" (click)="refresh()">Refresh</button></div>
+            @for (item of cases; track trackCase($index, item)) {
+              <article class="case-row"><b>{{ item.token_number }}</b><span><strong>{{ item.patient.rank_label }} {{ item.patient.name }}</strong><small>{{ item.patient.service_number }} • {{ item.proposed_surgery }}</small></span><em [attr.data-status]="item.consultation_status">{{ item.consultation_status }}</em><div class="row-buttons"><button (click)="reprint(item)">Reprint token</button><a [href]="formUrl(item)" target="_blank">Open form PDF</a></div></article>
+            } @empty { <div class="empty-state">No patients registered yet.</div> }
+          </section>
+        </section>
+      }
+
+      @if (view === 'doctor') {
+        <section class="doctor-layout">
+          <div class="panel patient-list">
+            <div class="section-heading"><div><h2>Reception list</h2><p>Call, review, and schedule an operation</p></div><input placeholder="Search name, number, token" [(ngModel)]="search" (keyup.enter)="refresh()"></div>
+            @for (item of cases; track item.id) {
+              <article class="doctor-row" [class.selected]="selectedCase?.id === item.id">
+                <b>{{ item.token_number }}</b><span (click)="selectCase(item)"><strong>{{ item.patient.rank_label }} {{ item.patient.name }}</strong><small>{{ item.proposed_surgery }} • {{ item.patient.unit }}</small></span><em>{{ item.consultation_status }}</em>
+                <div><button (click)="quickConsultStatus(item, 'called')">Call</button><button class="primary small" (click)="selectCase(item)">Review</button></div>
+              </article>
+            } @empty { <div class="empty-state">No matching reception patients.</div> }
+          </div>
+          <form class="panel review-form" (ngSubmit)="saveConsultation()">
+            @if (selectedCase) {
+              <p class="eyebrow">{{ selectedCase.token_number }} • {{ selectedCase.patient.service_number }}</p>
+              <h2>{{ selectedCase.patient.rank_label }} {{ selectedCase.patient.name }}</h2>
+              <p class="summary">{{ selectedCase.patient.age }} years • {{ selectedCase.patient.sex }} • {{ selectedCase.patient.unit }}</p>
+              <div class="form-grid single">
+                <label>Consultation status<select name="cstatus" [(ngModel)]="consultForm.status"><option value="waiting">Waiting</option><option value="called">Called</option><option value="in_progress">In progress</option><option value="completed">Review completed</option><option value="cancelled">Cancelled</option></select></label>
+                <label>Operation date<input name="otdate" type="date" [(ngModel)]="consultForm.scheduled_ot_date"></label>
+                <label>Ward<input name="ward" [(ngModel)]="consultForm.ward"></label><label>Disease / diagnosis<input name="disease" [(ngModel)]="consultForm.disease"></label>
+                <label class="span-2">Operation<input name="operation" [(ngModel)]="consultForm.operation"></label>
+                <label>Surgeon<input name="surgeon" [(ngModel)]="consultForm.surgeon"></label><label>Anaesthesiologist<input name="anesthesiologist" [(ngModel)]="consultForm.anesthesiologist"></label>
+                <label>ASA class<select name="asa" [(ngModel)]="consultForm.asa_class">@for (asa of ['I','II','III','IV','V','E']; track asa) { <option>{{ asa }}</option> }</select></label>
+                <label>OT table<select name="table" [(ngModel)]="consultForm.ot_table"><option value="">Assign later</option>@for (table of settings.ot_tables; track table) { <option>{{ table }}</option> }</select></label>
+                <label>OT serial<input name="serial" type="number" min="1" [(ngModel)]="consultForm.ot_serial"></label>
+              </div>
+              <button class="primary full" [disabled]="busy">Save review & schedule</button>
+            } @else { <div class="empty-state tall">Select a patient to begin the review.</div> }
+          </form>
+        </section>
+      }
+
+      @if (view === 'ot-control') {
+        <section class="panel ot-control">
+          <div class="section-heading"><div><h2>Daily OT roster</h2><p>Only patients scheduled by a doctor appear here</p></div><label class="date-control">Operation date<input type="date" [(ngModel)]="rosterDate" (change)="refresh()"></label></div>
+          <div class="roster-head"><span>Serial</span><span>Patient</span><span>Operation</span><span>Table</span><span>Status note</span><span>Actions</span></div>
+          @for (item of cases; track item.id) {
+            <article class="roster-row"><b>{{ item.ot_serial || '—' }}</b><span><strong>{{ item.patient.rank_label }} {{ item.patient.name }}</strong><small>{{ item.patient.service_number }} • {{ item.patient.age }} yrs • {{ item.patient.unit }}</small></span><span><strong>{{ item.operation || item.proposed_surgery }}</strong><small>{{ item.surgeon || 'Surgeon not entered' }}</small></span><select [(ngModel)]="item.ot_table">@for (table of settings.ot_tables; track table) { <option>{{ table }}</option> }</select><input [(ngModel)]="item.status_note" placeholder="Short live update"><div class="status-actions"><button (click)="setOtStatus(item, 'called')">Call</button><button (click)="setOtStatus(item, 'in_ot')">In OT</button><button (click)="setOtStatus(item, 'in_progress')">In progress</button><button class="complete-btn" (click)="setOtStatus(item, 'completed')">Complete</button><button class="danger-btn" (click)="setOtStatus(item, 'cancelled')">Cancel</button></div></article>
+          } @empty { <div class="empty-state tall">No patients are scheduled for this date.</div> }
+        </section>
+      }
+
+      @if (view === 'settings') {
+        <form class="panel settings" (ngSubmit)="saveSettings()">
+          <div class="panel-title"><span>Admin</span><div><h2>Printer & display settings</h2><p>Change these after the printer hardware is purchased</p></div></div>
+          <div class="settings-grid">
+            <label>Token prefix<input name="prefix" [(ngModel)]="settings.token_prefix"></label>
+            <label>Printer queue name<input name="printer" [(ngModel)]="settings.token_printer_name" placeholder="Windows or macOS queue name"></label>
+            <label>A4 form printer queue<input name="formPrinter" [(ngModel)]="settings.form_printer_name" placeholder="Windows or macOS queue name"></label>
+            <label>Paper width (mm)<input name="width" type="number" [(ngModel)]="settings.token_paper_width_mm"></label>
+            <label>Paper height (mm)<input name="height" type="number" [(ngModel)]="settings.token_paper_height_mm"></label>
+            <label>Current slide seconds<input name="currentSeconds" type="number" [(ngModel)]="settings.current_slide_seconds"></label>
+            <label>Upcoming slide seconds<input name="upcomingSeconds" type="number" [(ngModel)]="settings.upcoming_slide_seconds"></label>
+            <label class="span-2">OT tables (one per line)<textarea name="tables" rows="5" [ngModel]="settings.ot_tables.join('\n')" (ngModelChange)="settings.ot_tables = $event.split('\n')"></textarea></label>
+          </div>
+          <label class="check"><input type="checkbox" name="settingsAutoPrint" [(ngModel)]="settings.token_auto_print"> Enable server-side automatic token printing</label>
+          <label class="check"><input type="checkbox" name="settingsFormAutoPrint" [(ngModel)]="settings.form_auto_print"> Automatically print the two-page A4 anaesthesia form</label>
+          <button class="primary" [disabled]="busy">Save settings</button>
+        </form>
+      }
+    </main>
+  </div>
+}
