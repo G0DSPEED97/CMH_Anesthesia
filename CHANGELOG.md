@@ -2,6 +2,13 @@
 
 All notable project changes are recorded here. The project follows semantic versioning and keeps deployment-ready changes on the `main` branch after review.
 
+## 1.0.1 2026-10-03
+
+### Changed
+
+- Replaced the original presentation and PDF paths with the validated improved files.
+- Standardised both deliverable names by removing revision labels from the filenames.
+
 ## 1.0.0 2026-10-03
 
 ### Added

@@ -18,6 +18,3 @@ scripts/__pycache__/
 tmp/
 *.log
 presentation_assets/
-output/presentation/CMH_Anaesthesia_Pitch_Keynote.pptx
-output/presentation/CMH_Anaesthesia_Pitch_Keynote_High_Resolution.pptx
-output/pdf/CMH_Anaesthesia_Pitch_Keynote.pdf
